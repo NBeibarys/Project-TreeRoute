@@ -181,7 +181,7 @@ gcloud run deploy treeroute \
 
 | Name | GitHub |
 |---|---|
-| Daniyar Abykhanov | [@daniyar-udel](https://github.com/daniyar-udel) |
-| Vera Vecherskaia | [@vvchrsk](https://github.com/vvchrsk) |
-| Daniel Naumov | [@dnauminator](https://github.com/dnauminator) |
-| Beibarys Nyussupov | [@NBeibarys](https://github.com/NBeibarys) |
+| Daniyar Abykhanov | [@daniyar-udel](https://github.com/daniyar-udel) | dan1k.aby75@gmail.com
+| Vera Vecherskaia | [@vvchrsk](https://github.com/vvchrsk) | vvchrsk@gmail.com
+| Daniel Naumov | [@dnauminator](https://github.com/dnauminator) | dnauminator@gmail.com
+| Beibarys Nyussupov | [@NBeibarys](https://github.com/NBeibarys) | nyussupov.b@gmail.com
