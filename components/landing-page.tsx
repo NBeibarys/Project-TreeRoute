@@ -147,16 +147,16 @@ export function LandingPage() {
                 Register once, pick your triggers — oak, birch, maple — and the planner steers
                 you through lower-burden corridors instead of just the shortest path.
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 24 }}>
+              <div className="preview-route-list">
                 {[
                   { label: "Route A — Broadway", score: 18, level: "low" },
                   { label: "Route B — 5th Ave", score: 54, level: "moderate" },
                   { label: "Route C — Park Ave", score: 81, level: "high" },
                 ].map((r) => (
-                  <div key={r.label} style={{ display: "grid", gap: 6 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
-                      <span style={{ color: "var(--ink-2)" }}>{r.label}</span>
-                      <span className={`risk-band risk-${r.level}`} style={{ minHeight: 22, fontSize: "0.72rem", padding: "2px 10px" }}>Score {r.score}</span>
+                  <div key={r.label} className="preview-route-item">
+                    <div className="preview-route-header">
+                      <span className="preview-route-label">{r.label}</span>
+                      <span className={`risk-band risk-${r.level} preview-score-chip`}>Score {r.score}</span>
                     </div>
                     <div className="score-bar-track">
                       <div className={`score-bar-fill score-bar-fill-${r.level}`} style={{ width: `${r.score}%` }} />

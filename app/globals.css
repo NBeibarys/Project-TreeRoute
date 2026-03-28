@@ -1035,6 +1035,38 @@ input, textarea { color: var(--ink); }
   flex-shrink: 0;
 }
 
+/* ── Preview route list ─────────────────────────── */
+
+.preview-route-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.preview-route-item {
+  display: grid;
+  gap: 6px;
+}
+
+.preview-route-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.preview-route-label {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+.preview-score-chip {
+  min-height: 22px !important;
+  font-size: 0.72rem !important;
+  padding: 2px 10px !important;
+}
+
 /* ── Landing utilities ───────────────────────────── */
 
 .voice-divider {
