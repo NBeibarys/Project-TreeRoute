@@ -79,8 +79,8 @@ Voice input is parsed through `/api/voice-parse`, which uses Gemini with a local
 
 ```mermaid
 flowchart LR
-    A[Voice Input] --> B[/api/voice-parse]
-    C[Typed Input] --> D[/api/route-analysis]
+    A[Voice Input] --> B["voice-parse API"]
+    C[Typed Input] --> D["route-analysis API"]
     B --> D
 
     D --> E[Google Routes API]
@@ -93,7 +93,7 @@ flowchart LR
     G --> I
     H --> I
 
-    I --> J[Gemini Grounded Explanations]
+    I --> J[Gemini 2.5 Flash]
 
     J --> K[Map View]
     J --> L[Route Cards]
@@ -221,9 +221,9 @@ gcloud run deploy treeroute \
 
 ## Team
 
-| Name | GitHub |
-|---|---|
-| Daniyar Abykhanov | [@daniyar-udel](https://github.com/daniyar-udel) |
-| Vera Vecherskaia | [@vvchrsk](https://github.com/vvchrsk) |
-| Daniel Naumov | [@dnauminator](https://github.com/dnauminator) |
-| Beibarys Nyussupov | [@NBeibarys](https://github.com/NBeibarys) |
+| Name | Role | GitHub |
+|---|---|---|
+| Daniyar Abykhanov | Tech Lead | [@daniyar-udel](https://github.com/daniyar-udel) |
+| Vera Vecherskaia | Expert | [@vvchrsk](https://github.com/vvchrsk) |
+| Daniel Naumov | Expert | [@dnauminator](https://github.com/dnauminator) |
+| Beibarys Nyussupov | Engineer | [@NBeibarys](https://github.com/NBeibarys) |
