@@ -1,72 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-
 import { ALLERGY_TRIGGER_OPTIONS } from "@/lib/constants";
-import { DEFAULT_PROFILE, normalizeProfile } from "@/lib/profile";
-import { loadRouteDraft, loadStoredProfile, saveStoredProfile } from "@/lib/storage";
-import type { Sensitivity, UserProfile } from "@/lib/types";
+import { useRegisterController } from "@/lib/register-controller";
+import type { Sensitivity } from "@/lib/types";
 
 export function RegisterPage() {
-  const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile>(() => normalizeProfile(loadStoredProfile() ?? DEFAULT_PROFILE));
-  const [error, setError] = useState("");
-  const [routeSummary, setRouteSummary] = useState({
-    origin: "Washington Square Park, New York, NY",
-    destination: "Lincoln Center, New York, NY",
-  });
-
-  useEffect(() => {
-    const draft = loadRouteDraft();
-    if (draft) {
-      setRouteSummary({
-        origin: draft.origin.address || "Washington Square Park, New York, NY",
-        destination: draft.destination.address || "Lincoln Center, New York, NY",
-      });
-    }
-  }, []);
-
-  function handleRegister() {
-    if (!profile.name?.trim()) {
-      setError("Enter your name to continue.");
-      return;
-    }
-
-    if (!profile.email?.trim()) {
-      setError("Enter your email to continue.");
-      return;
-    }
-
-    if (profile.knowsTreeTriggers && !profile.triggers.length) {
-      setError("Choose at least one tree trigger, or switch to general tree avoidance.");
-      return;
-    }
-
-    const nextProfile: UserProfile = {
-      ...profile,
-      registrationComplete: true,
-      triggers: profile.knowsTreeTriggers ? profile.triggers : [],
-    };
-
-    saveStoredProfile(nextProfile);
-    router.push("/planner");
-  }
+  const {
+    error,
+    handleBack,
+    handleEmailChange,
+    handleKnowledgeChange,
+    handleNameChange,
+    handleNotesChange,
+    handleRegister,
+    handleSensitivityChange,
+    handleTriggerToggle,
+    profile,
+    routeSummary,
+  } = useRegisterController();
 
   return (
     <main className="register-shell">
       <header className="marketing-topbar">
         <div className="topbar-brand">
           <div className="topbar-logo">
-            <svg fill="none" height="20" viewBox="0 0 24 24" width="20"><path d="M12 3C8 3 4 7.5 4 12c0 3.2 1.8 6 4.5 7.5V21l3.5-1.5 3.5 1.5v-1.5C18.2 18 20 15.2 20 12c0-4.5-4-9-8-9z" fill="#406b49"/><circle cx="12" cy="11" fill="#fbfb86" r="2.5"/></svg>
+            <svg fill="none" height="20" viewBox="0 0 24 24" width="20">
+              <path
+                d="M12 3C8 3 4 7.5 4 12c0 3.2 1.8 6 4.5 7.5V21l3.5-1.5 3.5 1.5v-1.5C18.2 18 20 15.2 20 12c0-4.5-4-9-8-9z"
+                fill="#406b49"
+              />
+              <circle cx="12" cy="11" fill="#fbfb86" r="2.5" />
+            </svg>
           </div>
           <div>
             <h1>treeroute</h1>
             <p>Create your allergy profile</p>
           </div>
         </div>
-        <button className="ghost-link" onClick={() => router.push("/")} type="button">
-          ← Back
+        <button className="ghost-link" onClick={handleBack} type="button">
+          Back
         </button>
       </header>
 
@@ -82,12 +54,12 @@ export function RegisterPage() {
             <div className="route-intent-card">
               <div>
                 <span>Start</span>
-                <strong>{routeSummary.origin}</strong>
+                <strong>{routeSummary.origin.address}</strong>
               </div>
               <div className="route-intent-divider" />
               <div>
                 <span>End</span>
-                <strong>{routeSummary.destination}</strong>
+                <strong>{routeSummary.destination.address}</strong>
               </div>
             </div>
 
@@ -113,7 +85,7 @@ export function RegisterPage() {
                 Name
                 <input
                   className="text-input"
-                  onChange={(event) => setProfile({ ...profile, name: event.target.value, registrationComplete: false })}
+                  onChange={(event) => handleNameChange(event.target.value)}
                   placeholder="Avery"
                   value={profile.name ?? ""}
                 />
@@ -123,7 +95,7 @@ export function RegisterPage() {
                 Email
                 <input
                   className="text-input"
-                  onChange={(event) => setProfile({ ...profile, email: event.target.value, registrationComplete: false })}
+                  onChange={(event) => handleEmailChange(event.target.value)}
                   placeholder="avery@example.com"
                   type="email"
                   value={profile.email ?? ""}
@@ -137,7 +109,7 @@ export function RegisterPage() {
                     <button
                       className={`toggle-chip ${profile.sensitivity === level ? "toggle-chip-active" : ""}`}
                       key={level}
-                      onClick={() => setProfile({ ...profile, sensitivity: level, registrationComplete: false })}
+                      onClick={() => handleSensitivityChange(level)}
                       type="button"
                     >
                       {level}
@@ -151,21 +123,14 @@ export function RegisterPage() {
                 <div className="toggle-row">
                   <button
                     className={`toggle-chip ${profile.knowsTreeTriggers ? "toggle-chip-active" : ""}`}
-                    onClick={() => setProfile({ ...profile, knowsTreeTriggers: true, registrationComplete: false })}
+                    onClick={() => handleKnowledgeChange(true)}
                     type="button"
                   >
                     I know the tree species
                   </button>
                   <button
                     className={`toggle-chip ${!profile.knowsTreeTriggers ? "toggle-chip-active" : ""}`}
-                    onClick={() =>
-                      setProfile({
-                        ...profile,
-                        knowsTreeTriggers: false,
-                        triggers: [],
-                        registrationComplete: false,
-                      })
-                    }
+                    onClick={() => handleKnowledgeChange(false)}
                     type="button"
                   >
                     I don&apos;t know, avoid trees generally
@@ -183,15 +148,7 @@ export function RegisterPage() {
                         <button
                           className={`trigger-chip ${active ? "trigger-chip-active" : ""}`}
                           key={trigger}
-                          onClick={() =>
-                            setProfile({
-                              ...profile,
-                              registrationComplete: false,
-                              triggers: active
-                                ? profile.triggers.filter((item) => item !== trigger)
-                                : [...profile.triggers, trigger],
-                            })
-                          }
+                          onClick={() => handleTriggerToggle(trigger)}
                           type="button"
                         >
                           {trigger}
@@ -210,7 +167,7 @@ export function RegisterPage() {
                 Notes
                 <textarea
                   className="text-area"
-                  onChange={(event) => setProfile({ ...profile, notes: event.target.value, registrationComplete: false })}
+                  onChange={(event) => handleNotesChange(event.target.value)}
                   placeholder="Optional context for the routing engine"
                   rows={3}
                   value={profile.notes ?? ""}

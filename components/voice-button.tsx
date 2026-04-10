@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { postFastApiJson } from "@/lib/fastapi-client";
+
 type VoiceState = "idle" | "listening" | "processing" | "error";
 
 // Browser Speech Recognition types not in default TS lib
@@ -27,6 +29,11 @@ declare const SpeechRecognition: new () => ISpeechRecognition;
 interface VoiceButtonProps {
   onResult: (origin: string, destination: string) => void;
   disabled?: boolean;
+}
+
+interface VoiceParseResult {
+  origin?: string;
+  destination?: string;
 }
 
 export function VoiceButton({ onResult, disabled }: VoiceButtonProps) {
@@ -92,18 +99,13 @@ export function VoiceButton({ onResult, disabled }: VoiceButtonProps) {
       let origin = "";
       let destination = "";
 
-      // Try Gemini API first
+      // Try the FastAPI backend first.
       try {
-        const res = await fetch("/api/voice-parse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript: text }),
+        const data = await postFastApiJson<VoiceParseResult>("/voice-parse", {
+          transcript: text,
         });
-        const data = (await res.json()) as { origin?: string; destination?: string; error?: string };
-        if (!data.error) {
-          origin = data.origin ?? "";
-          destination = data.destination ?? "";
-        }
+        origin = data.origin ?? "";
+        destination = data.destination ?? "";
       } catch {
         // fall through to local parser
       }

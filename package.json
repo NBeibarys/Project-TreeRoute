@@ -4,17 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:backend": ".\\.venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --env-file .env.local",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check:fastapi": "node scripts/check-fastapi-ready.mjs",
     "build-tree-grid": "tsx scripts/build-tree-grid.ts",
     "capture:readme-demo": "node scripts/capture-readme-demo.mjs",
     "build:readme-demo-gif": "powershell -ExecutionPolicy Bypass -File scripts/build-readme-demo-gif.ps1"
   },
   "dependencies": {
-    "@google/genai": "^1.46.0",
     "next": "^16.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

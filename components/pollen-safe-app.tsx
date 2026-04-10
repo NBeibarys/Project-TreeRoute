@@ -2,138 +2,36 @@
 
 import Link from "next/link";
 import Script from "next/script";
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import { RouteMap } from "@/components/route-map";
 import { VoiceButton } from "@/components/voice-button";
 import { EXPOSURE_LABELS } from "@/lib/constants";
-import { DEFAULT_PROFILE, isRegistered, normalizeProfile } from "@/lib/profile";
-import { clearStoredProfile, clearRouteDraft, loadRouteDraft, loadStoredProfile } from "@/lib/storage";
-import type { RouteAnalysisResponse, UserProfile, WaypointInput } from "@/lib/types";
-
-const DEFAULT_ORIGIN: WaypointInput = {
-  address: "Washington Square Park, New York, NY",
-};
-
-const DEFAULT_DESTINATION: WaypointInput = {
-  address: "Lincoln Center, New York, NY",
-};
+import { usePlannerController } from "@/lib/planner-controller";
 
 const CLIENT_MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 export function PollenSafeApp() {
-  const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
-  const [origin, setOrigin] = useState<WaypointInput>(DEFAULT_ORIGIN);
-  const [destination, setDestination] = useState<WaypointInput>(DEFAULT_DESTINATION);
-  const [analysis, setAnalysis] = useState<RouteAnalysisResponse | null>(null);
-  const [selectedRouteId, setSelectedRouteId] = useState("");
-  const [mapsReady, setMapsReady] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [statusLine, setStatusLine] = useState("Build a route to see the lowest expected pollen exposure.");
-  const [ready, setReady] = useState(false);
-
-  const deferredAnalysis = useDeferredValue(analysis);
-  const selectedRoute = useMemo(
-    () => deferredAnalysis?.routes.find((route) => route.id === selectedRouteId) ?? deferredAnalysis?.routes[0] ?? null,
-    [deferredAnalysis, selectedRouteId],
-  );
-
-  useEffect(() => {
-    const storedProfile = loadStoredProfile();
-
-    if (!isRegistered(storedProfile)) {
-      router.replace("/register");
-      return;
-    }
-
-    setProfile(normalizeProfile(storedProfile));
-    const draft = loadRouteDraft();
-    if (draft) {
-      setOrigin(draft.origin.address ? draft.origin : DEFAULT_ORIGIN);
-      setDestination(draft.destination.address ? draft.destination : DEFAULT_DESTINATION);
-    }
-    setReady(true);
-  }, [router]);
-
-  async function handleAnalyze(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-    setError("");
-    setStatusLine("Analyzing walking alternatives against tree density, pollen, weather, and wind...");
-
-    try {
-      const response = await fetch("/api/route-analysis", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          origin,
-          destination,
-          profile,
-        }),
-      });
-
-      const payload = (await response.json()) as RouteAnalysisResponse | { error?: string };
-
-      if (!response.ok) {
-        const message = "error" in payload ? payload.error : "Route analysis failed.";
-        throw new Error(message ?? "Route analysis failed.");
-      }
-
-      if ("error" in payload) {
-        throw new Error(payload.error ?? "Route analysis failed.");
-      }
-
-      const analysisResponse = payload as RouteAnalysisResponse;
-
-      startTransition(() => {
-        setAnalysis(analysisResponse);
-        setSelectedRouteId(analysisResponse.routes[0]?.id ?? "");
-        setStatusLine(analysisResponse.summary);
-      });
-      speakSummary(analysisResponse);
-      clearRouteDraft();
-    } catch (caughtError) {
-      const message =
-        caughtError instanceof Error
-          ? caughtError.message
-          : "We could not build routes right now. Check your API keys and try again.";
-      setError(message);
-      setStatusLine("Unable to finish the live route analysis.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleResetRegistration() {
-    clearStoredProfile();
-    router.push("/register");
-  }
-
-  function handleVoiceResult(voiceOrigin: string, voiceDest: string) {
-    if (voiceOrigin) setOrigin({ address: voiceOrigin });
-    if (voiceDest) setDestination({ address: voiceDest });
-    if (voiceOrigin || voiceDest) {
-      setStatusLine("Route filled from voice — press Find Safe Route to analyse.");
-    }
-  }
-
-  function speakSummary(response: RouteAnalysisResponse) {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const best = response.routes[0];
-    if (!best) return;
-    const text = `${response.summary} The recommended route is ${best.label}, with a ${best.exposureLevel} exposure score of ${best.exposureScore}. ${best.explanation}`;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    utterance.rate = 0.95;
-    window.speechSynthesis.speak(utterance);
-  }
+  const {
+    analysis,
+    destination,
+    error,
+    handleAnalyze,
+    handleDestinationChange,
+    handleOriginChange,
+    handleResetRegistration,
+    handleVoiceResult,
+    loading,
+    mapsReady,
+    origin,
+    profile,
+    ready,
+    selectedRoute,
+    selectedRouteId,
+    setMapsReady,
+    setSelectedRouteId,
+    statusLine,
+  } = usePlannerController();
 
   if (!ready) {
     return <main className="planner-loading">Loading your treeroute profile...</main>;
@@ -152,11 +50,17 @@ export function PollenSafeApp() {
       <header className="marketing-topbar planner-topbar">
         <div className="topbar-brand">
           <div className="topbar-logo">
-            <svg fill="none" height="20" viewBox="0 0 24 24" width="20"><path d="M12 3C8 3 4 7.5 4 12c0 3.2 1.8 6 4.5 7.5V21l3.5-1.5 3.5 1.5v-1.5C18.2 18 20 15.2 20 12c0-4.5-4-9-8-9z" fill="#406b49"/><circle cx="12" cy="11" fill="#fbfb86" r="2.5"/></svg>
+            <svg fill="none" height="20" viewBox="0 0 24 24" width="20">
+              <path
+                d="M12 3C8 3 4 7.5 4 12c0 3.2 1.8 6 4.5 7.5V21l3.5-1.5 3.5 1.5v-1.5C18.2 18 20 15.2 20 12c0-4.5-4-9-8-9z"
+                fill="#406b49"
+              />
+              <circle cx="12" cy="11" fill="#fbfb86" r="2.5" />
+            </svg>
           </div>
           <div>
             <h1>treeroute</h1>
-            <p>Pollen exposure routing · NYC</p>
+            <p>Pollen exposure routing | NYC</p>
           </div>
         </div>
         <div className="planner-actions">
@@ -211,7 +115,7 @@ export function PollenSafeApp() {
               label="Starting location"
               labelClassName="field-label"
               mapsReady={mapsReady}
-              onChange={setOrigin}
+              onChange={handleOriginChange}
               placeholder="Starting location..."
               value={origin}
             />
@@ -219,7 +123,7 @@ export function PollenSafeApp() {
               label="Destination"
               labelClassName="field-label"
               mapsReady={mapsReady}
-              onChange={setDestination}
+              onChange={handleDestinationChange}
               placeholder="Destination..."
               value={destination}
             />
@@ -247,13 +151,13 @@ export function PollenSafeApp() {
               </span>
             </div>
 
-            {deferredAnalysis ? (
+            {analysis ? (
               <RouteMap
                 apiKey={CLIENT_MAPS_KEY}
                 mapsReady={mapsReady}
-                origin={deferredAnalysis.originPoint}
-                destination={deferredAnalysis.destinationPoint}
-                routes={deferredAnalysis.routes}
+                origin={analysis.originPoint}
+                destination={analysis.destinationPoint}
+                routes={analysis.routes}
                 selectedRouteId={selectedRouteId}
                 onSelectRoute={setSelectedRouteId}
               />
@@ -264,34 +168,34 @@ export function PollenSafeApp() {
             )}
           </section>
 
-          {deferredAnalysis ? (
+          {analysis ? (
             <>
               <section className="results-grid">
                 <article className="insight-card">
                   <p className="section-kicker">AI Recommendation</p>
-                  <h3>{deferredAnalysis.summary}</h3>
+                  <h3>{analysis.summary}</h3>
                   <p className="insight-support">
-                    Balances mapped tree exposure with live environmental conditions — not just speed.
+                    Balances mapped tree exposure with live environmental conditions, not just speed.
                   </p>
                   <div className="signal-row signal-row-spaced">
-                    <SignalPill emoji="🌿" label="Tree pollen" value={String(deferredAnalysis.pollen.treeIndex)} />
-                    <SignalPill emoji="💨" label="Wind" value={`${Math.round(deferredAnalysis.weather.windSpeedMph)} mph`} />
-                    <SignalPill emoji="💧" label="Humidity" value={`${Math.round(deferredAnalysis.weather.humidity)}%`} />
+                    <SignalPill label="Tree pollen" value={String(analysis.pollen.treeIndex)} />
+                    <SignalPill label="Wind" value={`${Math.round(analysis.weather.windSpeedMph)} mph`} />
+                    <SignalPill label="Humidity" value={`${Math.round(analysis.weather.humidity)}%`} />
                   </div>
                 </article>
 
                 <article className="insight-card civic-card">
-                  <p className="section-kicker">Area risk · NYC Open Data</p>
-                  <h3>{deferredAnalysis.civicInsight.areaName}</h3>
-                  <p>{deferredAnalysis.civicInsight.summary}</p>
-                  <span className={`risk-band risk-${deferredAnalysis.civicInsight.treeBurdenLevel} risk-band-spaced`}>
-                    Tree burden: {EXPOSURE_LABELS[deferredAnalysis.civicInsight.treeBurdenLevel]}
+                  <p className="section-kicker">Area risk | NYC Open Data</p>
+                  <h3>{analysis.civicInsight.areaName}</h3>
+                  <p>{analysis.civicInsight.summary}</p>
+                  <span className={`risk-band risk-${analysis.civicInsight.treeBurdenLevel} risk-band-spaced`}>
+                    Tree burden: {EXPOSURE_LABELS[analysis.civicInsight.treeBurdenLevel]}
                   </span>
                 </article>
               </section>
 
               <section className="route-list">
-                {deferredAnalysis.routes.map((route, index) => (
+                {analysis.routes.map((route, index) => (
                   <button
                     className={`route-card ${route.id === selectedRouteId ? "route-card-active" : ""}`}
                     key={route.id}
@@ -300,10 +204,12 @@ export function PollenSafeApp() {
                   >
                     <div className="route-card-header">
                       <div>
-                        <p className="route-rank">{index === 0 ? "★ Recommended" : `Alternative ${index}`}</p>
+                        <p className="route-rank">{index === 0 ? "Recommended" : `Alternative ${index}`}</p>
                         <h3>{route.label}</h3>
                       </div>
-                      <span className={`risk-band risk-${route.exposureLevel}`}>{EXPOSURE_LABELS[route.exposureLevel]}</span>
+                      <span className={`risk-band risk-${route.exposureLevel}`}>
+                        {EXPOSURE_LABELS[route.exposureLevel]}
+                      </span>
                     </div>
 
                     <div className="score-bar-wrap">
@@ -352,10 +258,10 @@ export function PollenSafeApp() {
   );
 }
 
-function SignalPill({ emoji, label, value }: { emoji?: string; label: string; value: string }) {
+function SignalPill({ label, value }: { label: string; value: string }) {
   return (
     <span className="source-pill">
-      {emoji ? `${emoji} ` : ""}{label}: <strong style={{ color: "var(--ink)" }}>{value}</strong>
+      {label}: <strong style={{ color: "var(--ink)" }}>{value}</strong>
     </span>
   );
 }
