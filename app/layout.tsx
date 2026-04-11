@@ -1,16 +1,8 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
-import { Comfortaa } from "next/font/google";
 
 import "@/app/globals.css";
-import { SiteBrand } from "@/components/site-brand";
-
-const comfortaa = Comfortaa({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-comfortaa",
-  display: "swap",
-});
+import { SiteBrand } from "@/components/shared/site-brand";
 
 export const metadata: Metadata = {
   title: "treeroute",
@@ -24,7 +16,7 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" className={comfortaa.variable}>
+    <html lang="en">
       <body>
         {children}
         <SiteBrand />

@@ -104,16 +104,13 @@ The app now runs as a split architecture:
 - `FastAPI` serves the runtime backend in `backend/app`
 
 The browser calls FastAPI directly using `NEXT_PUBLIC_FASTAPI_BASE_URL`.
-Legacy TypeScript server modules remain in the repo as rewrite references and testable domain code, but they are no longer used as runtime API endpoints.
 
-The agent path declares tools for:
+Route analysis follows this path:
 
-- fetching walking routes
-- fetching pollen data
-- fetching weather data
-- scoring route exposure
-
-Those signals are gathered in parallel, scored against the tree grid, and then passed to Gemini as grounded context for final explanations.
+1. The frontend submits a request to FastAPI.
+2. FastAPI resolves route geometry, weather, and pollen signals.
+3. The scoring layer ranks candidate routes against the NYC tree grid.
+4. Gemini turns the grounded result into readable explanations.
 
 ## Scoring Model
 
@@ -145,13 +142,20 @@ This scenario is tuned to show a visible tradeoff between route speed and allerg
 
 ## Local Setup
 
-1. Install dependencies:
+1. Install frontend dependencies:
 
 ```bash
 npm install
 ```
 
-2. Create a `.env.local` file in the project root, or copy `.env.example`:
+2. Create a Python virtual environment and install backend dependencies:
+
+```bash
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+```
+
+3. Create a `.env.local` file in the project root, or copy `.env.example`:
 
 ```bash
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
@@ -164,20 +168,19 @@ GEMINI_MODEL=gemini-2.5-flash
 CORS_ALLOW_ORIGINS=http://localhost:3000
 ```
 
-3. Start the Next.js app:
+4. Start the FastAPI backend:
+
+```bash
+npm run dev:backend
+```
+
+5. Start the Next.js app in a second terminal:
 
 ```bash
 npm run dev
 ```
 
-4. If you want to use the new Python backend, start FastAPI in a second terminal:
-
-```bash
-pip install -r backend/requirements.txt
-uvicorn backend.app.main:app --reload --port 8000
-```
-
-5. Open `http://localhost:3000`
+6. Open `http://localhost:3000`
 
 ```bash
 npm run check:fastapi
@@ -189,8 +192,11 @@ The script hits FastAPI directly and fails if `/health`, `/voice-parse`, or `/ro
 
 ```bash
 npm run dev
+npm run dev:backend
 npm run build
+npm run check:types
 npm run test
+npm run verify
 npm run check:fastapi
 npm run build-tree-grid -- ./StreetTreeCensus.csv ./data/tree-grid.generated.json
 npm run capture:readme-demo
@@ -201,19 +207,21 @@ npm run build:readme-demo-gif
 
 | File | Role |
 |---|---|
-| `components/landing-page.tsx` | Landing page and route-intent capture |
-| `components/register-page.tsx` | Registration and allergy-profile onboarding |
-| `components/pollen-safe-app.tsx` | Main planner UI, analysis flow, and speech output |
-| `components/voice-button.tsx` | Speech recognition UI with Gemini + local parsing fallback |
-| `components/route-map.tsx` | Route rendering and hotspot overlays on Google Maps |
+| `components/landing/landing-page.tsx` | Landing page and route-intent capture |
+| `components/register/register-page.tsx` | Registration and allergy-profile onboarding |
+| `components/planner/pollen-safe-app.tsx` | Main planner UI, analysis flow, and speech output |
+| `components/landing/voice-button.tsx` | Speech recognition UI with Gemini + local parsing fallback |
+| `components/planner/route-map.tsx` | Route rendering and hotspot overlays on Google Maps |
 | `backend/app/main.py` | FastAPI app and HTTP endpoints |
 | `backend/app/route_analysis.py` | Python route-analysis orchestration pipeline |
 | `backend/app/providers.py` | Python integrations for Maps, Weather, Pollen, and Gemini |
 | `backend/app/scoring.py` | Python route-scoring logic |
 | `backend/app/tree_grid.py` | Python tree-grid lookup and cache layer |
 | `backend/app/voice_parse.py` | Python voice-command parsing pipeline |
-| `lib/fastapi-client.ts` | Direct browser client for FastAPI |
+| `lib/api/fastapi-client.ts` | Direct browser client for FastAPI |
 | `scripts/build-tree-grid.ts` | CSV-to-grid preprocessing script |
+
+For a more detailed code map, see [docs/project-map.md](./docs/project-map.md).
 
 ## Data
 

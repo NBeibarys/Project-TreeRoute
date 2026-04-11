@@ -45,13 +45,13 @@ If frontend and backend run on different origins, FastAPI must also allow the fr
 2. Install dependencies:
 
 ```bash
-pip install -r backend/requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
 ```
 
 3. Start FastAPI from the repo root:
 
 ```bash
-uvicorn backend.app.main:app --reload --port 8000
+npm run dev:backend
 ```
 
 4. Point the Next.js frontend to the Python backend:
@@ -69,6 +69,7 @@ CORS_ALLOW_ORIGINS=http://localhost:3000
 6. Then run this from the frontend app:
 
 ```bash
+npm run verify
 npm run check:fastapi
 ```
 

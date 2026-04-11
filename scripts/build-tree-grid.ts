@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { TRIGGER_ALIASES } from "@/lib/constants";
-import type { TreeGridCell, TreeGridData } from "@/lib/types";
+import { TRIGGER_ALIASES } from "@/lib/shared/constants";
+import type { TreeGridCell, TreeGridData } from "@/lib/shared/types";
 
 const inputPath = process.argv[2];
 const outputPath = process.argv[3] ?? "data/tree-grid.generated.json";
@@ -122,7 +122,7 @@ function getTopKey(values: Map<string, number>) {
 function mapSpeciesToTrigger(species: string) {
   const normalized = species.toLowerCase();
 
-  for (const [trigger, aliases] of Object.entries(TRIGGER_ALIASES)) {
+  for (const [trigger, aliases] of Object.entries(TRIGGER_ALIASES) as Array<[string, string[]]>) {
     if (aliases.some((alias) => normalized.includes(alias))) {
       return trigger;
     }

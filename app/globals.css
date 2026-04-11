@@ -39,7 +39,7 @@
   --radius-lg: 32px;
 
   /* Font */
-  --font: var(--font-comfortaa), "Trebuchet MS", sans-serif;
+  --font: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
 }
 
 * { box-sizing: border-box; }
