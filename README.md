@@ -1,4 +1,4 @@
-# treeroute
+# TreeRoute
 
 treeroute is a hackathon-winning multimodal walking route planner for allergy-sensitive New Yorkers.
 
@@ -47,7 +47,7 @@ The product flow is:
 | Hear | `speechSynthesis` reads the best route recommendation aloud |
 | See | Google Maps route overlay, markers, and hotspot visualization |
 
-Voice input is parsed through `/api/voice-parse`, which uses Gemini with a local parser fallback.
+Voice input is parsed through the FastAPI `/voice-parse` endpoint, which uses Gemini with a regex fallback.
 
 ## What The App Does
 
@@ -63,6 +63,7 @@ Voice input is parsed through `/api/voice-parse`, which uses Gemini with a local
 
 - Next.js 16 App Router
 - React + TypeScript
+- Python + FastAPI backend
 - Google Maps JavaScript API
 - Google Routes API
 - Google Pollen API
@@ -76,8 +77,8 @@ Voice input is parsed through `/api/voice-parse`, which uses Gemini with a local
 
 ```mermaid
 flowchart LR
-    A[Voice Input] --> B["voice-parse API"]
-    C[Typed Input] --> D["route-analysis API"]
+    A[Voice Input] --> B["FastAPI /voice-parse"]
+    C[Typed Input] --> D["FastAPI /route-analysis"]
     B --> D
 
     D --> E[Google Routes API]
@@ -97,19 +98,19 @@ flowchart LR
     J --> M[Voice Summary]
 ```
 
-The route analysis backend supports two execution paths:
+The app now runs as a split architecture:
 
-- A direct analysis pipeline in `lib/server/route-analysis.ts`
-- An ADK-style single-turn orchestration agent in `lib/server/agent.ts`
+- `Next.js` serves the React frontend
+- `FastAPI` serves the runtime backend in `backend/app`
 
-The agent path declares tools for:
+The browser calls FastAPI directly using `NEXT_PUBLIC_FASTAPI_BASE_URL`.
 
-- fetching walking routes
-- fetching pollen data
-- fetching weather data
-- scoring route exposure
+Route analysis follows this path:
 
-Those signals are gathered in parallel, scored against the tree grid, and then passed to Gemini as grounded context for final explanations.
+1. The frontend submits a request to FastAPI.
+2. FastAPI resolves route geometry, weather, and pollen signals.
+3. The scoring layer ranks candidate routes against the NYC tree grid.
+4. Gemini turns the grounded result into readable explanations.
 
 ## Scoring Model
 
@@ -141,39 +142,62 @@ This scenario is tuned to show a visible tradeoff between route speed and allerg
 
 ## Local Setup
 
-1. Install dependencies:
+1. Install frontend dependencies:
 
 ```bash
 npm install
 ```
 
-2. Create a `.env.local` file in the project root:
+2. Create a Python virtual environment and install backend dependencies:
+
+```bash
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+```
+
+3. Create a `.env.local` file in the project root, or copy `.env.example`:
 
 ```bash
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+NEXT_PUBLIC_FASTAPI_BASE_URL=http://localhost:8000
 GOOGLE_MAPS_API_KEY=
 GOOGLE_POLLEN_API_KEY=
 GOOGLE_WEATHER_API_KEY=
 GOOGLE_AI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
+CORS_ALLOW_ORIGINS=http://localhost:3000
 ```
 
-3. Start the app:
+4. Start the FastAPI backend:
+
+```bash
+npm run dev:backend
+```
+
+5. Start the Next.js app in a second terminal:
 
 ```bash
 npm run dev
 ```
 
-4. Open `http://localhost:3000`
+6. Open `http://localhost:3000`
 
-The app includes graceful fallbacks, so some parts of the experience still work in degraded mode when certain live APIs are unavailable.
+```bash
+npm run check:fastapi
+```
+
+The script hits FastAPI directly and fails if `/health`, `/voice-parse`, or `/route-analysis` is not working.
 
 ## Commands
 
 ```bash
 npm run dev
+npm run dev:backend
 npm run build
+npm run check:types
 npm run test
+npm run verify
+npm run check:fastapi
 npm run build-tree-grid -- ./StreetTreeCensus.csv ./data/tree-grid.generated.json
 npm run capture:readme-demo
 npm run build:readme-demo-gif
@@ -183,18 +207,21 @@ npm run build:readme-demo-gif
 
 | File | Role |
 |---|---|
-| `components/landing-page.tsx` | Landing page and route-intent capture |
-| `components/register-page.tsx` | Registration and allergy-profile onboarding |
-| `components/pollen-safe-app.tsx` | Main planner UI, analysis flow, and speech output |
-| `components/voice-button.tsx` | Speech recognition UI with Gemini + local parsing fallback |
-| `components/route-map.tsx` | Route rendering and hotspot overlays on Google Maps |
-| `app/api/voice-parse/route.ts` | Voice command parsing with Gemini |
-| `app/api/route-analysis/route.ts` | Main API entry point for route analysis |
-| `lib/server/agent.ts` | ADK-style agent orchestration path |
-| `lib/server/route-analysis.ts` | Direct analysis pipeline with fallbacks |
-| `lib/scoring.ts` | Core pollen-exposure scoring logic |
-| `lib/tree-grid.ts` | Tree-grid lookup layer |
+| `components/landing/landing-page.tsx` | Landing page and route-intent capture |
+| `components/register/register-page.tsx` | Registration and allergy-profile onboarding |
+| `components/planner/pollen-safe-app.tsx` | Main planner UI, analysis flow, and speech output |
+| `components/landing/voice-button.tsx` | Speech recognition UI with Gemini + local parsing fallback |
+| `components/planner/route-map.tsx` | Route rendering and hotspot overlays on Google Maps |
+| `backend/app/main.py` | FastAPI app and HTTP endpoints |
+| `backend/app/route_analysis.py` | Python route-analysis orchestration pipeline |
+| `backend/app/providers.py` | Python integrations for Maps, Weather, Pollen, and Gemini |
+| `backend/app/scoring.py` | Python route-scoring logic |
+| `backend/app/tree_grid.py` | Python tree-grid lookup and cache layer |
+| `backend/app/voice_parse.py` | Python voice-command parsing pipeline |
+| `lib/api/fastapi-client.ts` | Direct browser client for FastAPI |
 | `scripts/build-tree-grid.ts` | CSV-to-grid preprocessing script |
+
+For a more detailed code map, see [docs/project-map.md](./docs/project-map.md).
 
 ## Data
 
