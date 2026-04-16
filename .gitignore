@@ -1,8 +1,11 @@
 .next
+frontend/.next
 node_modules
+frontend/node_modules
 .venv
 .claude
 __pycache__/
+backend/**/__pycache__/
 *.py[cod]
 .pytest_cache
 .env

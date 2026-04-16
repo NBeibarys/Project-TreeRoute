@@ -1,98 +1,61 @@
-# FastAPI Backend
+# Backend
 
-This folder is the runtime backend for the app.
-It is the only backend runtime path in the repo.
+The backend is a standalone FastAPI project inside `backend/`.
 
-## Step By Step Architecture
+## Structure
 
-1. `app/main.py`
-   Exposes the FastAPI app and HTTP endpoints for both `route-analysis` and `voice-parse`.
-
-2. `app/route_analysis.py`
-   Orchestrates the full request flow:
-   validate input -> resolve waypoints -> fetch route/weather/pollen signals -> score routes -> generate grounded copy.
-
-3. `app/voice_parse.py`
-   Handles voice-command parsing with Gemini and a regex fallback.
-
-4. `app/providers.py`
-   Talks to external systems and fallbacks:
-   Google Maps, Google Routes, Google Weather, Google Pollen, Gemini.
-
-5. `app/scoring.py`
-   Pure domain logic for ranking route exposure. This is the single source of truth for scoring.
-
-6. `app/tree_grid.py`
-   Loads the NYC tree-grid data and resolves nearby canopy cells.
-
-7. `app/geometry.py`
-   Small reusable math helpers such as distance, midpoint, polyline encoding, and route sampling.
-
-## Frontend Connection
-
-The browser calls FastAPI directly.
-
-The frontend should be configured with:
-
-```bash
-NEXT_PUBLIC_FASTAPI_BASE_URL=http://localhost:8000
+```text
+backend/
+  app/
+    api/            FastAPI app and route handlers
+    services/       orchestration use cases
+    domain/         scoring, geometry, tree-grid logic
+    integrations/   Google and Gemini clients
+    schemas/        Pydantic models
+  tests/            backend tests
+  scripts/
+    data/           data preparation scripts
+    health/         health check scripts
 ```
 
-If frontend and backend run on different origins, FastAPI must also allow the frontend origin through CORS.
+## Run
 
-## Local Run
-
-1. Create and activate a virtual environment.
-2. Install dependencies:
+From the repository root:
 
 ```bash
+python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+cd backend
+..\.venv\Scripts\python.exe -m uvicorn app.api.main:app --host 127.0.0.1 --port 8000 --env-file ..\.env.local
 ```
 
-3. Start FastAPI from the repo root:
+## Tests
 
 ```bash
-npm run dev:backend
+cd backend
+..\.venv\Scripts\python.exe -m unittest discover -s tests
 ```
 
-4. Point the Next.js frontend to the Python backend:
+## Utility Scripts
+
+Health check:
 
 ```bash
-NEXT_PUBLIC_FASTAPI_BASE_URL=http://localhost:8000
+cd backend
+..\.venv\Scripts\python.exe scripts\health\check_fastapi_ready.py
 ```
 
-5. Allow the frontend origin:
+Build a tree grid from raw census data:
 
 ```bash
-CORS_ALLOW_ORIGINS=http://localhost:3000
-```
-
-6. Then run this from the frontend app:
-
-```bash
-npm run verify
-npm run check:fastapi
-.\.venv\Scripts\python.exe -m unittest discover -s backend/tests
+cd backend
+..\.venv\Scripts\python.exe scripts\data\build_tree_grid.py ..\StreetTreeCensus.csv ..\data\generated\tree-grid.generated.json
 ```
 
 ## Docker
 
-You can also build the backend as a standalone container:
+Build from the repository root:
 
 ```bash
-docker build -f backend/Dockerfile -t treeroute-fastapi .
-docker run -p 8000:8000 --env-file .env.local treeroute-fastapi
+docker build -f backend/Dockerfile .
 ```
-
-## Required Environment Variables
-
-```bash
-GOOGLE_MAPS_API_KEY=
-GOOGLE_POLLEN_API_KEY=
-GOOGLE_WEATHER_API_KEY=
-GOOGLE_AI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
-CORS_ALLOW_ORIGINS=http://localhost:3000
-```
-
-FastAPI also supports degraded fallback behavior when some live APIs are unavailable.

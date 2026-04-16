@@ -1,8 +1,8 @@
 import unittest
 
-from backend.app.geometry import encode_polyline
-from backend.app.models import GoogleRoute, LatLngLiteral, PollenSignal, UserProfile, WeatherSignal
-from backend.app.scoring import score_routes
+from app.domain.geometry import encode_polyline
+from app.domain.scoring import score_routes
+from app.schemas.models import GoogleRoute, LatLngLiteral, PollenSignal, UserProfile, WeatherSignal
 
 WEATHER = WeatherSignal(
     description="Breezy and dry",
