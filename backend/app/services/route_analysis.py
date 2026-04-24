@@ -43,7 +43,7 @@ async def analyze_route_request(request: RouteAnalysisRequest) -> RouteAnalysisR
 
     routes = await get_routes_with_fallback(origin.location, destination.location, fallback_mode)
     route_signals, weather, pollen = await build_route_signal_context(routes, fallback_mode)
-    scored_routes = score_routes(
+    scored_routes = await score_routes(
         routes,
         request.profile,
         weather,

@@ -18,3 +18,8 @@ coverage
 .chrome-readme-demo
 .chrome-tmp
 docs/media/frames
+data/2015_tree_census.csv
+ruvector.db
+.claude-flow/
+.mcp.json
+.swarm/
